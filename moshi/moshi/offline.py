@@ -64,7 +64,7 @@ def log(level: str, msg: str):
 
 
 def seed_all(seed: int):
-    """Seed torch, CUDA, numpy, and Python RNG for reproducible runs.
+    """Seed torch, CUDA, MPS, numpy, and Python RNG for reproducible runs.
 
     Matches the seeding strategy in server.py.
     """
@@ -72,12 +72,12 @@ def seed_all(seed: int):
     if torch.cuda.is_available():
         torch.cuda.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = False
+        torch.backends.cudnn.benchmark = False
     import random
     import numpy as _np
     random.seed(seed)
     _np.random.seed(seed)
-    torch.backends.cudnn.deterministic = False
-    torch.backends.cudnn.benchmark = False
 
 
 def wrap_with_system_tags(text: str) -> str:
@@ -108,6 +108,8 @@ def warmup(mimi: MimiModel, other_mimi: MimiModel, lm_gen: LMGen, device: str, f
             _ = other_mimi.decode(tokens[:, 1:9])
     if torch.cuda.is_available():
         torch.cuda.synchronize()
+    elif torch.backends.mps.is_available():
+        torch.mps.synchronize()
 
 
 def decode_tokens_to_pcm(mimi: MimiModel, other_mimi: MimiModel, lm_gen: LMGen, tokens: torch.Tensor) -> np.ndarray:
